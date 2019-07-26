@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scaling-service-deployment
+  namespace: algarportal
+spec:
+  selector:
+    matchLabels:
+      app: scaling-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: scaling-service
+    spec:
+      containers:
+      - name: scaling-service
+        image: 
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 3000
+          periodSeconds: 1000
+        ports: 
+          - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: icp-scale-service-config
+        - secretRef:
+            name: icp-scale-seervice-secret
+      #   env: 
+      #    - name: CAM_PASSWORD
+      #      valueFrom:
+      #        secretKeyRef:
+      #          name: scaling-service-secret
+      #          key: CAM_PASSWORD
+      #    - name: CAM_TENANT_ID
+      #      value: e3032294-9f6f-4855-b8a2-a79b61006846
+      #    - name: ICP_HOST
+      #      value: 10.51.76.28:8443
+      #    - name: CAM_HOST
+      #      value: 10.51.76.29:30000
+      #    - name: CAM_USER
+      #      value: admin
+         
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: scaling-service
+  name:  scaling-service-service
+spec:
+  ports:
+  - port: 3000
+    protocol: TCP
+    nodePort: 31456
+  selector:
+    app: scaling-service
+  type: NodePort
+status:
+loadBalancer: {}
+
