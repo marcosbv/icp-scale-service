@@ -36,6 +36,29 @@ class CAMClient {
        
     }
 
+    getAllStacks(tenantId, teamId, namespaceUid, token) {
+      
+        let cam_url = "https://" + this.cam_host + "/cam/api/v1/stacks?tenantId=" + tenantId +
+        "&ace_orgGuid=" + teamId +
+        "&cloudOE_spaceGuid=" +namespaceUid;
+
+        let httpClient = this.httpClient;
+        let request_options = {
+            url: cam_url,
+            json: true,
+            rejectUnauthorized: false,
+            headers: {
+                'Authorization' : 'Bearer ' + token
+            }
+        }
+
+        return new Promise(function (resolve, reject) {
+            httpClient.get(request_options).then(function(response) {
+               resolve(response)
+            })
+        })
+    }
+
     getStackByStackId(tenantId, teamId, namespaceUid, stackId, token, templateName) {
         let cam_url = "https://" + this.cam_host + "/cam/api/v1/stacks?tenantId=" + tenantId +
                           "&ace_orgGuid=" + teamId +
@@ -176,7 +199,7 @@ class CAMClient {
         }
 
         return new Promise(function (resolve, reject) {
-           httpClient.delete(request_options).then(function(response) {
+           httpClient.post(request_options).then(function(response) {
             resolve(response);
            }).catch(function (err) {
             console.log("Erro ao realizar o destroy do stack: " + err);
@@ -243,8 +266,36 @@ class CAMClient {
         });
     }
 
-    createStack(tenantId, teamId, namespaceUid, token, bodyRequest) {
+    createStack(tenantId, teamId, namespaceUid, token, cloudConnectionId, templateId, instance_name, parameters) {
+        let cam_url = "https://" + this.cam_host + "/cam/api/v1/stacks?tenantId=" + tenantId +
+        "&ace_orgGuid=" + teamId +
+        "&cloudOE_spaceGuid=" +namespaceUid;
 
+        let bodyRequest = {}
+        bodyRequest.name = instance_name
+        bodyRequest.cloud_connection_ids = []
+        bodyRequest.cloud_connection_ids.push(cloudConnectionId)
+        bodyRequest.templateId = templateId
+        bodyRequest.parameters = parameters
+        bodyRequest.forceCreate = "true"
+
+
+        let httpClient = this.httpClient;
+        let request_options = {
+            url: cam_url,
+            json: true,
+            rejectUnauthorized: false,
+            headers: {
+                'Authorization' : 'Bearer ' + token
+            },
+            body: bodyRequest
+        }
+
+        return new Promise(function (resolve, reject) {
+            httpClient.post(request_options).then(function(response) {
+               resolve(response)
+            })
+        })
     }
 
     async getTemplateDetails(tenantId, teamId, namespaceUid, templateId, token, self) {
@@ -312,6 +363,36 @@ class CAMClient {
                reject(err);
             })
         });
+
+    }
+
+    getCloudConnectionByName(tenantId, teamId, connectionName, token) {
+        let cam_url = `https://${this.cam_host}/cam/api/v1/cloudconnections?tenantId=${tenantId}&ace_orgGuid=${teamId}&filter[where][name]=${connectionName}`
+        let httpClient = this.httpClient;
+        let request_options = {
+            url: cam_url,
+            json: true,
+            rejectUnauthorized: false,
+            headers: {
+                'Authorization' : 'Bearer ' + token
+            }
+        }
+
+        let self = this;
+        return new Promise(function (resolve, reject) {
+            httpClient.get(request_options).then(function(response) {
+                if(response.length > 0) {
+                    resolve(response[0])
+                } else {
+                    reject("Cloud Connection não encontrado!")
+                }
+      
+            }).catch(function (err) {
+               console.log("Erro ao procurar cloud connection por nome: " + err);
+               reject(err);
+            })
+        });
+ 
     }
 }
 
